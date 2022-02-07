@@ -1,0 +1,14 @@
+Time resolution is 1 ps
+Error: File /home/gear/FPAGA/Labs/Lab11_2/data2fpga.dat is already at the end of file, nothing to read
+Time: 992373 ps  Iteration: 1  Process: /test_bench/reader/read_data  File: /home/gear/FPAGA/Labs/Lab11_2/project_1/project_1.srcs/sim_1/new/fileRd.vhd
+Warning: TEXTIO function READ: line is empty
+Time: 992373 ps  Iteration: 1  Process: /test_bench/reader/read_data  File: /home/gear/FPAGA/Labs/Lab11_2/project_1/project_1.srcs/sim_1/new/fileRd.vhd
+Error: File /home/gear/FPAGA/Labs/Lab11_2/data2fpga.dat is already at the end of file, nothing to read
+Time: 992497 ps  Iteration: 1  Process: /test_bench/reader/read_data  File: /home/gear/FPAGA/Labs/Lab11_2/project_1/project_1.srcs/sim_1/new/fileRd.vhd
+Warning: TEXTIO function READ: line is empty
+Time: 992497 ps  Iteration: 1  Process: /test_bench/reader/read_data  File: /home/gear/FPAGA/Labs/Lab11_2/project_1/project_1.srcs/sim_1/new/fileRd.vhd
+ERROR: File /home/gear/FPAGA/Labs/Lab11_2/data2fpga.dat could not be opened.
+Time: 992621 ps  Iteration: 1  Process: /test_bench/reader/read_data
+  File: /home/gear/FPAGA/Labs/Lab11_2/project_1/project_1.srcs/sim_1/new/fileRd.vhd
+
+HDL Line: /home/gear/FPAGA/Labs/Lab11_2/project_1/project_1.srcs/sim_1/new/fileRd.vhd:37

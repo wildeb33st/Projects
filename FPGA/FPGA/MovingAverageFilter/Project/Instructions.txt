@@ -1,0 +1,36 @@
+There are two zip files present. 
+The first is called project_1.zip and contains vhdl files. The second is called Matlab.zip and contains the Matlab scripts to be used in the project. 
+
+This project was built in linux but should run on windows with minimal modifications. 
+-----------------------------------------------------------
+--Preparing the Project Files
+-----------------------------------------------------------
+Both zip files along must be downloaded. It is advised to make a new directory and place both files there. 
+
+Unzip both files and two folders should be generated -- project1/ and Matlab.
+
+
+-----------------------------------------------------------
+--Simulating the Project
+-----------------------------------------------------------
+
+Start Matlab (or Octave) and run the SineWave.m file. This will generate the Sine wave with interference. 
+
+Without closing the window or closing Matlab, run the DataWrite.m file which will generate a data2fpga.dat file
+
+Before starting Vivado, navigate to the test bench file located at
+project_1/project_1.srcs/sim_1/new/tb.vhd and change the constant file_name
+to reflect the current directory of data2fpga.dat and file_name_wr to the location of the folder in which project_1.zip and Matlab.zip 
+
+Start Vivado and open the project_1.xpr file. Run the simulation. Make sure all components are being simulated by adding them to the wave window.
+No erros should be present.
+
+Synthesize and implement the design and make sure no errors are present.
+There should now be an additional file data_from_fpga.dat
+
+In the Matlab window, run DataRead.m file followed by DataCompare.m file.
+A new matlab window should be created
+
+NOTE: It is suggested to run all programs with admin/root privileges
+
+
