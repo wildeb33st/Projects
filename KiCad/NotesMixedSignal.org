@@ -1,0 +1,98 @@
+* IMPORTANT
+The Files contained in the folder called MixSigCourse-KiCad-Files comes as course materials extracted from the .rar file of the same name. These are the files that should be used for the course. Some of the step files come from various websites on the internet and are there to provide models for the various 3D models for parts
+* System Requirements
+1. To have the device powered over *USB*. This puts a system power restriction of about *500mA* at *+5v* which is gives an overall power consumption of *2.5 W*
+2. Must be able to generate as well as analyse a signal. Implying some form of ADC/DAC needs to be incporporated
+3. Signal Analysis implies some form of data processing necessary which would most likely require the use of an Microprocessor
+4. The device will also be *single-channel*
+
+** Specifying the Requirements
+1. The frequemcy rangew that we will be operating at should be within the usual audio ranges i.e. /20Hz to 20 kHz/. Based on the Nyquist theorem, this means that the minimum sampling rate needs to be *40kHz*
+2. In order to reduce quantisation error a bit depth of /12/ will be used. Since a single-channel is being used, the overall data rate will be ~1 Channel x 12bits x 40 000 samples per second (40kHz) = *0.46Mbits/s*~
+3. SWD is chosen as the debug interface
+
+* Part choice
+- This is depoendent on a number of factors. This design will use the STM32 for example due to the familiarity
+- Usually flash memory would be used for actual program storage while variables would typically use RAM
+- It might be a good idea to avoid diffuclt to use packages such as QFN and BGA100 package types
+- The particular MCU used in this design is the STM32 which is a 32-bit microcontroller. More specifically, the F1 line which is mainstream. STM32F103CBT6 <- the last few numbers are used to describe specific variants as it pertains to RAM, flash, package type etc.
+
+* Schematic Design
+** Power
+- This controls all the power circuitry. As stated before, the VBUS will be provided by the USB Type-C connector. This section makes use of a Linear Regulator and a Switching Regualtor along with a Bias generator.
+- The Filtering section starts with the input Pi filter network with a DCR (DC Resistance) of 0R15 (0.15 Ohms) and a DC Current of 500mA <-----These are for the inductor specifically. It is important to always spec the components appropriately. The circuit is expected to use about 150mA but the inductor has been over spec'd in order to prevent burnout i.e. I(DC) = 500mA. The Inductor also has some resistance which prevents it from simply acting as a resonator that produces a specific frequency.
+- The effect of it being a resonator is that at a specific frequency (in this case ~1.5MHz) there will be a large frequency spike which is not good for the power supply.
+- The filter is a specific form of an RLC filter. The voltage is taken from accross the capacitor and by employing two capacitors, the filter becomes bi-directional. Since the filter uses an inductor and capacitor, it is a second-order filter which gives a much sharper roll-off compared to RC filters.
+- When designing filters for power supplies, it is generally a good idea to filter out high frequency noise. In this case the filter has been tuned to a frequency of about 1.6MHz. This is because we are using high speed digital circuitry.
+
+- In the case of the linear regulator (used for the analogue signals) which makes use of the HT7533, the minimum required capacitance from the spec sheet is 10uF, however 22uF are used in the design to compensate for capacitor tolerance rating.
+- The Resitor is placed in the front of the linear regulator to form an RC filter which in this case is a Low pass filter.
+- This is also used to supress the switching noise that will come from the switching regulator for the Digital components
+- *IMPORTANT!!!!!* Make sure everything has a net name. In the case of devices connected to power such as 3.3V, 5V, 3.3VA and GND, these do not need separate net names as they are a part of the Nets they are connected to. However, if devices are not connected to a pre-defined net, it is good practice to give them one. This will make layout and routing much easier.
+- Generally speaking, try to use a shielded inductor to prevent radiation
+- DNP is for "Do Not Place". This will cause an unpopulated pad to be on the board in the final design and allows capacitors to be placed after the fact.
+- The Bias Generator is needed since the analogue parts of the circuit are being run between +3.3V and GND. However, Op-Amps will perform and are designed for +VE to -VE voltage swings.
+** MCU and USB
+- The VDD power pins are specific to the Digital Circuitry while the VDDA pins are for the analogue circuitry -- which might include the ADC or DAC. VBAT can be tied to a battery and can be used to power the real-time clock. In this case, we are not using the RTC and so VBAT can be tied to the same source as the other digital circuitry.
+- The VDDA pin can be tied to the same 3.3V as the other circuitry if none of the analogue functions are being used
+- NRST must be pulled low to cause the MCU to reset. Internally, there is a 40k ohms resistor that pulls the pin high (it would be left floating if unused in the circuit). Sometimes it is good practise to attach an additional pull-up resistor
+- The STM32 has it's own crystal but for high speed applications such as UART or USB, then it makes sense to use the external HSE (High Speed External) crystal oscillator
+- The stray capacitance (due to the leads and traces, package type etc. that is present can usually be estimated as 3pF-5pF)
+- The feed resistor for the crystal oscillator serves a two-fold purpose. It forms a low pass filter in the circuit and will limit the amount of harmonics and distortion. This leads to the practise of ensuring the cutoff frequency of the filter formed is the same as or around the same fundametal frequency as the crystal. The other purpose is to prevent the crystal from being overdriven which will prevent distortion.
+- This particular design uses timer channels instead of GPIO for driving the RGB LED. These timer channels produce PWN signals and are therefore very useful as by varying the duty cycle, the strength of the light source can be varied
+- STMCubeIDE can be used in pin planning. This will enable different interfaces in the MCU. Trace Asynchronous SW represents Serial Wire Debug in the IDE. The SWO pin of Serial Wire Debug isn't strictly necessary but it does enable live variable monitoring which can be invaluable in the debug process
+- In this design, the STM32 is acting as a receive only master for the ADC. This is for SPI1. There is also a chip select signal (NSS) which is also implemented
+- For SP2, the MCU is the one outputting signal since it is connected to the DAC. Therefore, it can be set to Transmit only master
+- Generally, if there is a component or other piece of cicuitry that switches, it is good practise to use a decoupling capacitor. This idea is why the RGB LED has a decoupling capacitor in this design
+- The USB C connection has ESD (ElectroStatic Discharge) protection in this design as well as a common-mode choke. The ESD protection used in this type of design should be low capacitance because it is considered as "high speed" and using components that present a very large capacitance will begin to limit the rise and fall times of the signal, thus limiting the speed of the bus
+- The common-mode choke is used for filtering. The impedence must be deisgn so that it does not create a very high impedence at the USB design frequency
+- Bi-Directional TVS diodes are used for ESD protection. These should be placed close to the device. Current limiting resistors are added to the protection circuitry to protect both the MCU as well as the ST programmer that mayb be connected at the time
+** ADC, DAC and Analogue Circuitry
+- The ADC in this case is a custom symbol as it is not contained in KiCad by default
+- It is a good idea that when you begin to create custom symbols that you create a library to store them so you can keep your created symbols separate from the pre-configured/pre-made ones that KiCad may have
+- In this design, there is a 0 Ohms resistor used on the clock line of the ADC. This improves EMI Performance and prevents "ringing" in the clock signals. The phenomenon of "ringing" occurs when an electrical pulse causes the parasitic capacitances and/or inductances to resonate. Recall, that at resonance the capacitive and inductive elements within a circuit cancel each other and result in zero reactance leading to the impedence being fully resistive. Fully resistive impedences will dissipate the maximum amount of current (Maximum power transfer theorem) and therefore draw more current than is expected under nominal conditions. The additional heating of components can cause additional EM radiation to be produced
+- Note that for ICs, it is typically not recommended to split the GND for analogue and digitals systems on a PCB. This will be discussed later in the course
+  - The role of the analogue front-end is to perform some kind of impedence matching and anti-aliasing. The ADC itself has a input impedence of a feew kOhms while an oscilloscope can have an input impedence in the range of a Mega-Ohm
+- C301 is used as an AC coupling capacitor and removes any additional DC bias that would cause issues when fed into the Op-Amp and added to the DC bias already in the design
+- Johnson noise is that noise present in almost all electronic circuits and is due to the random movement (Brownian motion ??) of electrons within the circuit. This is exacerbated when the components temperatures rise. Therefore, it is good to keep the resistances in the circuit low when designing or dealing with circuits that would carry signals.
+- The U300 Op-Amp is a simple high impedence buffer. The input impedence of the Op-Amp is considered infinite. Voltage followers can be extremely useful as they allow impedences to be set even in the presence of other components.
+- There are three "classic" analogue filters which include the Butterworth filter, the Chebyshev and the Bessel filter
+** Footprints and other schematic tips
+- 0402 components are small SMD packages and are generally a good choice for passive components like capacitors or resistors. When resistors are large and used for power, they will usually need to be 0603 or 0805 packages which are larger. A similar idea applies to capacitors as well and capacitors like the 22uF would be difficult to find in the 0402 size
+- There are tradeoffs with the size of components chosen. The package size may also be chosen based on the application within the circuit. For example, bypass capacitors would need to be placed close to the MCU and so smaller packages enable this and they are better able to provide power for those spikes in power needs. In addition to that, the smaller capacitors enable shorter traces which also reduce the presence of parasitic capacitances. However, larger capacitors would usually give you a better viltage rating than their smaller counterparts and would often be at cheaper prices. There are multiple considerations to make when choosing components, their packages and their sizes
+* PCB Design, Layout and Routing
+** Introduction
+This design will use a four-layer board which is generally taken as the bare minimum required for this kind of design. Although typically some people use a signal plane, a ground plane, a VCC plane and another signal plane. This design will use the signal plane, GND plane, GND plane and the Signal Plane.
+
+- Often times when dealing with PCBs, there is a need for controlled impudence traces. Generally, high-speed systems, like those for USB would need these controlled impedence traces. The traces are effectively considered as transmission lines and so you would need KiCad calculator transmission line mode to determine how to create the traces
+** Design Rules and Setup
+- Design rules are dependent on a number of factors but are most often associated with the manufacturer you are using or the standard to which you are designing for
+- The physical stackup tab in the board editor will allow you to set the board layers are other such parameters. This design is based on the idea that the board will be manufactured by JLC PCB and so the physical requirements of the board are set based on their capabilities. One of the points to note is that the dielectric constant must also be changed/added if it is different from that used as the default in KiCad.
+- As discussed before, the internal two layers will be power planes with the outermost layers being used for signaling
+- ENIG is used as the board finish and this stands for Emersion Nickel Gold
+- Once again when entering the Design Rules, specifically the Constraints, these are based on the capabilities of the manufacturer. It is good practise to not create a design that is at the limit of what a manufacturer can make. For example, JLC PCB can make a minimum via size of 0.2mm but it is a bad practise to use this within the constraints as there is some variation (tolerance) in the measurements they list. So a good via constraint size based on this example is to use 0.25mm
+
+** Layout and routing
+- Take the time to make sure when you import into the PCB editor that there are no errors. Also take the time to ensure that there are no missing 3D models for your PCB. A good site I found was https://app.ultralibrarian.com/details/b3fd1afa-c846-11eb-9033-0a34d6323d74/Dialight/597-7701-207F?uid=119184&exports=KiCAD&open=exports
+- Once there are multiple CAPACITORS to be placed in the same general area, it is best to place the smallest capacitor first so that it can be as close as possible to the relevant IC pin. As a general rule of thumb, the smaller capacitors are better for high frequency transients.
+- Generally for digital designs, when there are a lot of different component TYPES to be placed in the same general area, the decoupling capacitors and the crystal will take precedence over other components
+- When placing the XTAL it is good to keep it relatively close to the IC, however it is not necessary to place it as close as a decoupling capacitor. The more important factor when placing the component is to ensure that it is far away from any other high speed switching circuitry since they may radiate and affect the stability of the XTAL. This principle is held for traces carrying high speed signals as well
+- For pull-up/pull-down resistors, even though they are not expected to be as close to the MCU as the decoupling capacitors, they should be oriented in such a way as to allow the traces to be routed directly from the pad of the MCU to the resistor.
+- ESD protection should be placed as close to the connector itself as possible.
+- ADC and DAC ICs will usually separate their pins based on whether they are for the analogue or digital part of the design. This is a good rule to follow in the overall design as well since separation of the components physically on the board based on whether they are analogue or digital reduces the field coupling towards the minimum value. This reduces the effects of interference and crosstalk in each of the sections. This idea of separating the components of the PCB based on the type of circuitry is sometimes referred to as partitioning. Designing around minimizing the size of current loops also adheres to the idea of partitioning
+- In this design the MCU is acting as the master for the ADC and so the resistor that is used to potentially reduce ringing (R309) is placed closer to the slave, which is the ADC.
+- Try the reduce the occurrence of "stubs" in the design which can be formed as a result of routing out from a component and then into a via and then up again. This is more important for high-speed designs (unlike this one) but it is still a good practice to maintain
+- Try to have identical schematic configurations laid out in the same  way on the physical PCB
+- In this design the actual DAC IC does not entirely separate the digital and analogue signals on either side of the package. A mixture of these signal types exist on both sides. In this situation, it may be tempting to not care about how the package is laid out but two considerations to be made are as follows:
+  - The package can still ideally be placed in a similar orientation to the ADC so there is at least some similarity in the physical layout
+  - The Higher speed signals are still generally located on one side. NLDAC and NCLR signals will change infrequently and as a result will not greatly affect the Analogue signals if they are oriented towards the analogue side
+- PCB layout and routing can often seem simplistic when looking at schematics but however can be greatly impacted by the way that they are laid out and routed
+- The general layout for power should flow from Connector -> ESD Protection -> Filtering
+- Filtering should also be close to the input so the minimum amount of noise can run through the traces before reaching the filter
+- Although the Buck converter has a shielded inductor, it is still likely to produce some amount of radiation and as such it is not a good idea to place it near sensitive components. Such components may include the crystal oscillator, the MCU and even possibly the SWD connector
+** Layout
+- The first and second internal copper layers will be used for ground. Although it is tempting to split the analogue and internal grounds, this should never be done. Splitting the grounds based on whether it is analogue or digital will cause any signals crossing the return paths (to grounds) to generate large amounts of unwanted radiation. Simply keeping the layout distances of analogue and digital sufficiently large will prevent  reliance on separating grounds for isolation
+- In this design there are two ground planes available. Due to this it is usually trivial to draw a trace out and then create a via. However, since vias can get in the way of other traces, it is a good idea to add them relatively early into the design
+- Although not strictly necessary, it is good practise to route all the control signals with a controlled impedance. In this case, this means using the 0.293 impedance trace which was calculated to be 50Ohms
+- When routing the chip select signal (SPI1_NSS), it was necessary to cross the clock signal (SPI1_SCK). To do this, the chip select signal needed to be routed on the other side of the PCB with a via. When I via is used in this way, it is necessary to use another via to the ground plane near the via used to route the signal
+- These two ground planes need to be stitched together using vias. If this it not done, it will cause excessive inductances to be generated
