@@ -1,0 +1,13 @@
+* Mixed Signal Hardware Design
+This PCB design is based on the course "Mixed Signal Hardware Design" from FEDEVEL Academy. The design makes use of KiCAD for both schematic and PCB Design.  The following URL contains an overview
+of the course :
+- https://www.phils-lab.net/courses
+
+* Design Specification
+Below are the specifications for the design:
+- The Device is powered over USB and as such the overall power requirement is *2.5W* with an current of *500mA* and a voltage of *5V*
+- The device will be single channel operating within the general audio frequency range i.e. /20Hz to 20kHz/
+- Signal Analysis and Signal Generation will be performed by the device
+- The use of a DAC/ADC is required along with an MCU. The bit depth chosen for the design is 12.
+- The MCU family is the STM32
+- SWD is chosen for debugging purposes
